@@ -10,7 +10,7 @@ export class Sudoku extends LitElement {
         :host {
             display: block;
             width: 980px;
-            height: 430px;
+            height: 930px;
             max-width: 1280px;
             margin: 0 auto;
             padding: 2rem;
@@ -34,8 +34,8 @@ export class Sudoku extends LitElement {
         }
 
         .sudoku {
-            height: 80px;
-            width: 80px;
+            height: 65px;
+            width: 65px;
             font-size: 45px;
             border-radius: 13px;
             border: 1px solid antiquewhite;
@@ -55,8 +55,8 @@ export class Sudoku extends LitElement {
         }
         
         .chosen {
-            height: 80px;
-            width: 80px;
+            height: 65px;
+            width: 65px;
             border-radius: 13px;
             border: 1px solid antiquewhite;
             justify-content: center;
@@ -67,8 +67,8 @@ export class Sudoku extends LitElement {
         }
 
         .leer {
-            height: 80px;
-            width: 80px;
+            height: 65px;
+            width: 65px;
             border-radius: 13px;
             border: 1px solid antiquewhite;
             justify-content: center;
@@ -93,6 +93,10 @@ export class Sudoku extends LitElement {
         .right {
             float: right;
             width: 50%;
+        }
+        
+        .title {
+            font-size: 1.5em;
         }
     `;
 
@@ -140,16 +144,10 @@ export class Sudoku extends LitElement {
         return [c, c + 9, c + 18, c + 27, c + 36, c + 45, c + 54, c + 63, c + 72];
     }
 
-    private checkSeries : number[][] = [[0, 1, 2],
-                                        [3, 4, 5],
-                                        [6, 7, 8],
-                                        [0, 3, 6],
-                                        [1, 4, 7],
-                                        [2, 5, 8],
-                                        [0, 4, 8],
-                                        [2, 4, 6]]; //TODO:
+    private hasNums(v: number) {
+        //allow to cancel the number
+        if (this.nums[this.focused] == v) return false;
 
-    private hasNums(v: number) { //TODO
         //same number in block
         let block = this.getBlock(this.focused)
             .map(n => this.nums[n]);
@@ -186,11 +184,8 @@ export class Sudoku extends LitElement {
 
 
 
-    private checkWin() { //TODO
-        for (let l of this.checkSeries) {
-            if (!(l[0] != l[1] && l[1] != l[2] && l[0] != l[2])) return false;
-        }
-        return true;
+    private checkWin() {
+        return this.nums.filter(v => v == 0).length == 0;
     }
 
     private sudoku() {
@@ -225,8 +220,8 @@ export class Sudoku extends LitElement {
                                 range(3), (col) => html`
                                     <button
                                             class="numPdl"
-                                            @click="${() => this.toggleValue(this.to1D(row, col) + 1)}"
-                                            ?disabled="${this.hasNums(this.to1D(row, col) + 1)}"
+                                            @click="${() => this.toggleValue(row * 3 + col + 1)}"
+                                            ?disabled="${this.hasNums(row * 3 + col + 1)}"
                                     >
                                         ${row * 3 + col + 1}
                                     </button>
@@ -238,16 +233,15 @@ export class Sudoku extends LitElement {
     }
 
     render() {
-        if (this.checkWin()) this.infos = 'Win!'; else this.infos = '';
+        this.infos = this.checkWin() ? 'Win!' : '';
 
-        return html`<p>Sudoku v1.0</p>
+        return html`<p class="title">Sudoku v1.0</p>
             <div>${this.sudoku()}</div>
             <p></p>
-            <div class="left">${this.numPaddle()}</div>
+            <div class="right">${this.numPaddle()}</div>
             <div class="right">${this.numPaddle()}</div>
             
             <div>${this.infos}</div>
-        <p>${this.focused} + ${this.value}</p>
         `;
     }
 }

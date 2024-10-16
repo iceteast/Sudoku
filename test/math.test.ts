@@ -14,3 +14,11 @@ test('get row of 71', () => {
 test('get col of 1', () => {
     expect(s.getCol(1)).toStrictEqual([1, 10, 19, 28, 37, 46, 55, 64, 73])
 })
+
+test('get block of 1', () => {
+    expect(s.getBlock(1)).toStrictEqual([0, 1, 2, 9, 10, 11, 18, 19, 20])
+})
+
+test('get block of 53', () => {
+    expect(s.getBlock(53)).toStrictEqual([33, 34, 35, 42, 43, 44, 51, 52, 53])
+})
