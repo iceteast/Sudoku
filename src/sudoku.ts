@@ -115,8 +115,8 @@ export class Sudoku extends LitElement {
 
     private mainPage = () => {
         return html`
-            <div class="left">${this.sudoku()}</div>
-            <div class="right">${this.numPaddle()}</div>
+            <div>${this.sudoku()}</div>
+            <div class="left">${this.numPaddle()}</div>
             <div class="right">${this.numPaddle()}</div>
         `;
     }
@@ -137,10 +137,10 @@ export class Sudoku extends LitElement {
 
     static styles = css`
         :host {
-            width: 95%;
+            //width: 95%;
             display: block;
             margin: 0 auto;
-            padding: 2rem;
+            //padding: 2rem;
             text-align: center;
         }
 
@@ -160,8 +160,8 @@ export class Sudoku extends LitElement {
         }
 
         .sudoku {
-            height: 6vh;
-            width: 3vw;
+            height: 8vh;
+            width: 4vw;
             color: #dddddd;
             font-size: 2.2vw;
             border-radius: 0.5vw;
@@ -196,12 +196,12 @@ export class Sudoku extends LitElement {
         
         .left {
             float: left;
-            width: 90%;
+            width: 20%;
         }
         
         .right {
             float: right;
-            width: 10%;
+            width: 20%;
         }
         
         .title {
