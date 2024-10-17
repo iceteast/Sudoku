@@ -77,6 +77,7 @@ export class Sudoku extends LitElement {
 
     private numPaddle() {
         return html`
+            <p>Input Pad</p>
             ${map(
                 range(3), (row) => html`
                     <div class="row">${map(
@@ -114,9 +115,8 @@ export class Sudoku extends LitElement {
 
     private mainPage = () => {
         return html`
-            <div>${this.sudoku()}</div>
-            <p></p>
-            <div class="left">${this.numPaddle()}</div>
+            <div class="left">${this.sudoku()}</div>
+            <div class="right">${this.numPaddle()}</div>
             <div class="right">${this.numPaddle()}</div>
         `;
     }
@@ -126,18 +126,18 @@ export class Sudoku extends LitElement {
 
     //TODO: LIST:
     //1. add guess part
-    //--2. add highlight for same number, and the row-col(-block) indicator.--
+    //2. add a time counter and records.
     render() {
 
 
-        return html`<p class="title">Sudoku v1.0</p>
+        return html`<p class="title">Sudoku v1.0</p><my-timer duration="130"></my-timer>
             ${this.dashboard()}
         `;
     }
 
     static styles = css`
         :host {
-            color: #aa11aa
+            width: 95%;
             display: block;
             margin: 0 auto;
             padding: 2rem;
@@ -145,11 +145,10 @@ export class Sudoku extends LitElement {
         }
 
         .numPdl {
-            height: 40px;
-            width: 40px;
-            border-radius: 3px;
+            height: 4vh;
+            width:  2vw;
+            border-radius: 0.3vw;
             border: 1px solid transparent;
-            padding: 0.6em 1.1em;
             justify-content: center;
             background-color: #1a1a1a;
             cursor: pointer;
@@ -161,11 +160,11 @@ export class Sudoku extends LitElement {
         }
 
         .sudoku {
-            height: 65px;
-            width: 65px;
+            height: 6vh;
+            width: 3vw;
             color: #dddddd;
-            font-size: 45px;
-            border-radius: 13px;
+            font-size: 2.2vw;
+            border-radius: 0.5vw;
             border: 1px solid antiquewhite;
             justify-content: center;
             cursor: pointer;
@@ -192,21 +191,21 @@ export class Sudoku extends LitElement {
         }
         
         .row {
-            padding-bottom: 0.35em;
+            padding-bottom: 0.35rem;
         }
         
         .left {
             float: left;
-            width: 50%;
+            width: 90%;
         }
         
         .right {
             float: right;
-            width: 50%;
+            width: 10%;
         }
         
         .title {
-            font-size: 1.5em;
+            font-size: 1.5rem;
         }
         
         .black {
