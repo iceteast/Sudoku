@@ -1,64 +1,71 @@
 import { LitElement, css, html } from 'lit'
-import { customElement, state } from 'lit/decorators.js'
+import { customElement, state, property } from 'lit/decorators.js'
 import { map } from 'lit/directives/map.js';
 import {range} from 'lit/directives/range.js';
 import {classMap} from 'lit/directives/class-map.js'
-import {Generator, to1D} from "./generator.ts";
+import {Generator} from "./generator.ts";
 
 @customElement('my-sudoku')
 export class Sudoku extends LitElement {
 
     //public data
     @state() value = 0;
-    @state() focused = 0;
-    @state() infos = '';
+    @state() focused = [0, 0];
+    @state() infos = 'Welcome!';
     @state() gen = new Generator();
-
-    //@property() nums : number[] = this.gen.generate();
+    @state() gameover = true;
+    @property({type: Number}) option = 20
 
     private toggleValue = (v: number) => {
-        this.gen.setNumber(this.focused, v);
+        this.gen.setNumber(this.focused[0], this.focused[1], v);
+        this.checkWin();
         this.requestUpdate()
     };
 
     private focusOn = (row: number, col: number) => {
-        this.focused = to1D(row, col);
+        this.focused = [row, col];
     }
 
-    private highlightCheck = (v: number) => {
-        if (this.focused === v) return true;
-        return this.gen.getHighLight(this.focused, v);
+    private highlightCheck =
+        (r: number, c: number) => this.gen.isHighLight(this.focused[0], this.focused[1], r, c);
+
+
+    private blockColorCheck =
+        (r: number, c: number) => (Math.floor(r / 3) + Math.floor(c / 3)) % 2 === 1;
+
+    private checkWin = () => {
+        this.gameover = this.gen.isFinished();
+        this.infos = this.gameover ? 'Win! Start Again?' : 'Welcome!';
     }
 
-    private blockColorCheck = (v: number) => {
-        let r = Math.floor(Math.floor(v / 9) / 3);
-        let c = Math.floor((v % 9) / 3);
-        return (r + c) % 2 === 1;
+    private startGame() {
+        this.gameover = false;
+        this.gen.generate(this.option);
+        this.requestUpdate();
     }
 
-    private startPage() {
-        return html`<button @click="${this.gen.generate}">Start</button>`;
+    private changeDifficult(e: Event) {
+        const v = (e.target as HTMLInputElement).value;
+        this.option = Number.parseInt(v);
     }
-
     private sudoku() { //TODO: classMap or function for class?
         return html`
             ${map(
                 range(9), (row) => html`
                     <div class="row">${map(
                         range(9), (col) => {
-                            let v = to1D(row, col);
                             return html`
                                 <button
                                     class="${classMap({
-                                        black: !this.highlightCheck(v) && this.blockColorCheck(v),
-                                        white: !this.highlightCheck(v) && !this.blockColorCheck(v),
-                                        chosen: this.highlightCheck(v),
-                                        leer: this.gen.isPositionEmpty(v),
+                                        black: !this.highlightCheck(row, col) && this.blockColorCheck(row, col),
+                                        white: !this.highlightCheck(row, col) && !this.blockColorCheck(row, col),
+                                        chosen: this.highlightCheck(row, col),
+                                        leer: this.gen.isPositionEmpty(row, col),
                                         sudoku: true
                                     })}"
                                     @click="${() => this.focusOn(row, col)}"
                                 >
-                                    ${this.gen.getNumber(v)}
+                                    ${this.gen.getNumber(row, col)}
                                 </button>
                             `;
                         })}
@@ -79,7 +86,7 @@ export class Sudoku extends LitElement {
                                 <button
                                     class="numPdl"
                                     @click="${() => this.toggleValue(v)}"
-                                    ?disabled="${this.gen.available(this.focused, v)}"
+                                    ?disabled="${!this.gen.available(this.focused[0], this.focused[1], v)}"
                                 >
                                     ${v}
                                 </button>
@@ -91,25 +98,46 @@ export class Sudoku extends LitElement {
         `;
     }
 
-    //TODO: LIST:
-    //1. add guess part
-    //2. add highlight for same number, and the row-col(-block) indicator.
-    render() {
-        this.infos = this.gen.isFinished() ? 'Win!' : '';
+    private startPage = () => {
+        return html`
+            <div>${this.infos}</div>
+            <div>
+                <button @click="${this.startGame}">Start</button>
+                <select @change="${this.changeDifficult}">
+                    <option value="20" selected > Easy   </option>
+                    <option value="35"          > Middle </option>
+                    <option value="55"          > Hard   </option>
+                </select>
+            </div>
+        `;
+    }
 
-        return html`<p class="title">Sudoku v1.0</p>
-            <p>${this.startPage()}</p>
+    private mainPage = () => {
+        return html`
             <div>${this.sudoku()}</div>
             <p></p>
             <div class="left">${this.numPaddle()}</div>
             <div class="right">${this.numPaddle()}</div>
-            
-            <div>${this.infos}</div>
+        `;
+    }
+
+    private dashboard =
+        () => this.gameover ? this.startPage() : this.mainPage();
+
+    //TODO: LIST:
+    //1. add guess part
+    //--2. add highlight for same number, and the row-col(-block) indicator.--
+    render() {
+
+
+        return html`<p class="title">Sudoku v1.0</p>
+            ${this.dashboard()}
         `;
     }
 
     static styles = css`
         :host {
+            color: #aa11aa
             display: block;
             margin: 0 auto;
             padding: 2rem;
@@ -135,17 +163,18 @@ export class Sudoku extends LitElement {
         .sudoku {
             height: 65px;
             width: 65px;
+            color: #dddddd;
             font-size: 45px;
             border-radius: 13px;
             border: 1px solid antiquewhite;
             justify-content: center;
-            background-color: #1a1a1a;
             cursor: pointer;
             transition: border-color 0.25s;
         }
 
         .sudoku:hover {
-            background-color: #4b397c;
+            background-color: #d9b611;
+            opacity: 0.74;
         }
 
         .sudoku:focus,
@@ -154,8 +183,8 @@ export class Sudoku extends LitElement {
         }
         
         .chosen {
-            background-color: #1bd1a5;
-            opacity: 0.6;
+            background-color: #a98601;
+            
         }
 
         .leer {
@@ -181,11 +210,11 @@ export class Sudoku extends LitElement {
         }
         
         .black {
-            background-color: #065279;
+            background-color: #032639;
         }
         
         .white {
-            background-color: #003472;
+            background-color: #001432;
         }
     `;
 }

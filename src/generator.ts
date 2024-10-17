@@ -14,121 +14,122 @@ function sfc32(a: number, b: number, c: number, d: number) {
 const seedGen = () => (Math.random()*2**32)>>>0;
 export const getRand = sfc32(seedGen(), seedGen(), seedGen(), seedGen());
 
-
-export const to1D = (row : number, col : number) => row * 9 + col;
+export function shuffle(arr : number[]) {
+    for (let i = 0; i < arr.length; i++) {
+        let j = Math.floor(getRand() * arr.length);
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+}
 
 export class Generator {
 
-    SIZE = 81;
-    nums: number[] = Array(this.SIZE).fill(0);
+    SIZE = 9;
+    nums: number[][] = Array.from({ length: this.SIZE }, () => Array(this.SIZE).fill(0));
 
-    //math functions
-    getBlock(loc: number) {
-        //calc the row and col of blocks(3*3)
-        let r = Math.floor(Math.floor(loc / 9) / 3);
-        let c = Math.floor((loc % 9) / 3);
-
-        //calc the left-top number of block
-        let k = r * 27 + c * 3
-        return [k, k + 1, k + 2, k + 9, k + 10, k + 11, k + 18, k + 19, k + 20];
+    isHighLight(focusedR: number, focusedC: number, checkR: number, checkC: number) {
+        if (focusedR === checkR && focusedC === checkC) return true;
+        return !!(this.nums[focusedR][focusedC] && this.nums[focusedR][focusedC] === this.nums[checkR][checkC]);
     }
 
-    getRow(loc: number) {
-        let c = loc;
-        //find the first element of this row.
-        while (c % 9 != 0) { c--; }
-        return [c, c + 1, c + 2, c + 3, c + 4, c + 5, c + 6, c + 7, c + 8];
+    isPositionEmpty(r: number, c: number): boolean {
+        return this.nums[r][c] === 0;
     }
 
-    getCol(loc: number) {
-        let c = loc;
-        //find the first element of this column.
-        while (c / 9 >= 1) { c -= 9; }
-        return [c, c + 9, c + 18, c + 27, c + 36, c + 45, c + 54, c + 63, c + 72];
+    setNumber(r: number, c: number, v: number) {
+        if (this.nums[r][c] === v) {this.nums[r][c] = 0;}
+        if (this.nums[r][c] === 0) {this.nums[r][c] = v;}
     }
 
-    getHighLight(loc: number, v: number) {
-        return !!(this.nums[v] && this.nums[v] === this.nums[loc]);
+    getNumber(r: number, c: number) {
+        return this.nums[r][c];
     }
 
-    isPositionEmpty(loc: number): boolean {
-        return this.nums[loc] === 0;
-    }
+    getRandomNumber = () => Math.floor(getRand() * 9);
 
-    setNumber(loc: number, v: number) {
-        if (this.nums[loc] === v) {this.nums[loc] = 0;}
-        if (this.nums[loc] === 0) {this.nums[loc] = v;}
-    }
-
-    getNumber(loc: number) {
-        return this.nums[loc];
-    }
-
-    getRandomNumber = () => Math.floor(getRand() * 9) + 1;
-
-    available(focused: number, v: number) {
+    available(r: number, c: number, v: number) {
         //allow to cancel the number
-        if (this.nums[focused] === v) return false;
+        if (this.nums[r][c] === v) return true;
 
         //same number in block
-        let block = this.getBlock(focused)
-            .map(n => this.nums[n]);
-        for (let i of block) {
-            if (v === i) return true;
+
+        //calc the left-top coordinate of block
+        let x = Math.floor(r / 3) * 3;
+        let y = Math.floor(c / 3) * 3;
+
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 3; j++) {
+                if (this.nums[x + i][y + j] === v) return false;
+            }
         }
 
-        //same number in row
-        let row = this.getRow(focused)
-            .map(n => this.nums[n]);
-        for (let i of row) {
-            if (v === i) return true;
-        }
-
-        //same number in column
-        let col = this.getCol(focused)
-            .map(n => this.nums[n]);
-        for (let a of col) {
-            if (v === a) return true;
+        //same number in row & col
+        for (let i = 0; i < this.SIZE; i++) {
+            if (this.nums[r][i] === v || this.nums[i][c] === v) {
+                return false;
+            }
         }
 
         //no match
-        return false;
+        return true;
     }
 
-    isFinished() {
-        return this.nums.filter(v => v === 0).length === 0;
+    clear = () => {
+        this.nums = Array.from({ length: this.SIZE }, () => Array(this.SIZE).fill(0));
+    }
+
+    isFinished() { //TODO : need to check
+        return this.nums.filter(v => v.filter(i => i === 0).length === 0).length === 9;
     }
 
     private fill = () => {
         for (let i = 0; i < this.SIZE; i++) {
-            if (!this.nums[i]) {
-                for (let j = 1; j <= 9; j++) {
-                    if (this.available(i, j)) {
-                        this.nums[i] = j;
-                        if (this.fill()) return true;
-                        this.nums[i] = 0;
+            for (let j = 0; j < this.SIZE; j++) {
+                if (this.nums[i][j] === 0) {
+                    for (let k = 1; k <= 9; k++) {
+                        if (this.available(i, j, k)) {
+                            this.nums[i][j] = k;
+                            if (this.fill()) return true;
+                            this.nums[i][j] = 0;
+                        }
                     }
+                    return false;
                 }
-                return false;
             }
         }
         return true;
     }
 
     private removeElements = (n: number)=> {
-        let c = n;
-        while (c >= 0) {
-            let k = Math.floor(getRand() * 81);
-            if (this.nums[k] !== 0) {
-                this.nums[k] = 0;
-                c--;
+        let r = 0;
+        let c = 0;
+
+        while (n > 0) {
+            [r, c] = [this.getRandomNumber(), this.getRandomNumber()];
+
+            if (this.nums[r][c] !== 0) {
+                this.nums[r][c] = 0;
+                n--;
             }
         }
     }
 
-    generate = () => {
+    generate = (n : number) => {
+        //clear data
+        this.clear()
+
+        //generate the first line then shuffle
+        for (let i = 0; i < this.SIZE; i++) {
+            this.nums[0][i] = 9 - i;
+        }
+        shuffle(this.nums[0])
+
+        //fill all blanks with legal number
         this.fill();
-        this.removeElements(3);
+
+        //remove some numbers to make it a puzzle.
+        this.removeElements(n);
+
+        //return the answer for test.
         return this.nums;
     }
 }
