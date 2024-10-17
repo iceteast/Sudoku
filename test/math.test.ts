@@ -1,7 +1,7 @@
 import {expect, test } from 'vitest'
-import {Sudoku} from '../src/sudoku.ts'
+import {Generator} from "../src/generator";
 
-let s = new Sudoku();
+let s = new Generator();
 
 test('get row of 1', () => {
     expect(s.getRow(1)).toStrictEqual([0, 1, 2, 3, 4, 5, 6, 7, 8])
@@ -21,4 +21,8 @@ test('get block of 1', () => {
 
 test('get block of 53', () => {
     expect(s.getBlock(53)).toStrictEqual([33, 34, 35, 42, 43, 44, 51, 52, 53])
+})
+
+test('generate', () => {
+    expect(s.generate()).toBe([1, 3])
 })

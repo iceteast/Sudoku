@@ -1,17 +1,116 @@
 import { LitElement, css, html } from 'lit'
-import { customElement, property, state } from 'lit/decorators.js'
+import { customElement, state } from 'lit/decorators.js'
 import { map } from 'lit/directives/map.js';
 import {range} from 'lit/directives/range.js';
 import {classMap} from 'lit/directives/class-map.js'
+import {Generator, to1D} from "./generator.ts";
 
 @customElement('my-sudoku')
 export class Sudoku extends LitElement {
+
+    //public data
+    @state() value = 0;
+    @state() focused = 0;
+    @state() infos = '';
+    @state() gen = new Generator();
+
+    //@property() nums : number[] = this.gen.generate();
+
+    private toggleValue = (v: number) => {
+        this.gen.setNumber(this.focused, v);
+        this.requestUpdate()
+    };
+
+    private focusOn = (row: number, col: number) => {
+        this.focused = to1D(row, col);
+    }
+
+    private highlightCheck = (v: number) => {
+        if (this.focused === v) return true;
+        return this.gen.getHighLight(this.focused, v);
+    }
+
+    private blockColorCheck = (v: number) => {
+        let r = Math.floor(Math.floor(v / 9) / 3);
+        let c = Math.floor((v % 9) / 3);
+        return (r + c) % 2 === 1;
+    }
+
+    private startPage() {
+        return html`<button @click="${this.gen.generate}">Start</button>`;
+    }
+
+    private sudoku() { //TODO: classMap or function for class?
+        return html`
+            ${map(
+                range(9), (row) => html`
+                    <div class="row">${map(
+                        range(9), (col) => {
+                            let v = to1D(row, col);
+                            return html`
+                                <button
+                                    class="${classMap({
+                                        black: !this.highlightCheck(v) && this.blockColorCheck(v),
+                                        white: !this.highlightCheck(v) && !this.blockColorCheck(v),
+                                        chosen: this.highlightCheck(v),
+                                        leer: this.gen.isPositionEmpty(v),
+                                        sudoku: true
+                                    })}"
+                                    @click="${() => this.focusOn(row, col)}"
+                                >
+                                    ${this.gen.getNumber(v)}
+                                </button>
+                            `;
+                        })}
+                    </div>
+                `
+            )}
+        `;
+    }
+
+    private numPaddle() {
+        return html`
+            ${map(
+                range(3), (row) => html`
+                    <div class="row">${map(
+                        range(3), (col) => {
+                            let v = row * 3 + col + 1; 
+                            return html`
+                                <button
+                                    class="numPdl"
+                                    @click="${() => this.toggleValue(v)}"
+                                    ?disabled="${this.gen.available(this.focused, v)}"
+                                >
+                                    ${v}
+                                </button>
+                            `;
+                        })}
+                    </div>
+                `
+            )}
+        `;
+    }
+
+    //TODO: LIST:
+    //1. add guess part
+    //2. add highlight for same number, and the row-col(-block) indicator.
+    render() {
+        this.infos = this.gen.isFinished() ? 'Win!' : '';
+
+        return html`<p class="title">Sudoku v1.0</p>
+            <p>${this.startPage()}</p>
+            <div>${this.sudoku()}</div>
+            <p></p>
+            <div class="left">${this.numPaddle()}</div>
+            <div class="right">${this.numPaddle()}</div>
+            
+            <div>${this.infos}</div>
+        `;
+    }
+
     static styles = css`
         :host {
             display: block;
-            width: 980px;
-            height: 930px;
-            max-width: 1280px;
             margin: 0 auto;
             padding: 2rem;
             text-align: center;
@@ -55,32 +154,14 @@ export class Sudoku extends LitElement {
         }
         
         .chosen {
-            height: 65px;
-            width: 65px;
-            border-radius: 13px;
-            border: 1px solid antiquewhite;
-            justify-content: center;
-            cursor: pointer;
-            transition: border-color 0.25s;
-            background-color: #11397c;
+            background-color: #1bd1a5;
             opacity: 0.6;
         }
 
         .leer {
-            height: 65px;
-            width: 65px;
-            border-radius: 13px;
-            border: 1px solid antiquewhite;
-            justify-content: center;
-            cursor: pointer;
-            transition: border-color 0.25s;
-            background-color: #1a1a1a;
-            color: #1a1a1a;
+            color: transparent;
         }
-
-        .leer:hover {
-            color: #4b397c;
-        }
+        
         .row {
             padding-bottom: 0.35em;
         }
@@ -98,153 +179,17 @@ export class Sudoku extends LitElement {
         .title {
             font-size: 1.5em;
         }
+        
+        .black {
+            background-color: #065279;
+        }
+        
+        .white {
+            background-color: #003472;
+        }
     `;
-
-    //public data
-    @property() nums : number[] = [
-        0, 0, 0, 0 ,0, 0, 0 ,0, 0,
-        0, 0, 0, 0 ,0, 0, 0 ,0, 0,
-        0, 0, 0, 0 ,0, 0, 0 ,0, 0,
-        0, 0, 0, 0 ,0, 0, 0 ,0, 0,
-        0, 0, 0, 0 ,0, 0, 0 ,0, 0,
-        0, 0, 0, 0 ,0, 0, 0 ,0, 0,
-        0, 0, 0, 0 ,0, 0, 0 ,0, 0,
-        0, 0, 0, 0 ,0, 0, 0 ,0, 0,
-        0, 0, 0, 0 ,0, 0, 0 ,0, 0,
-    ];
-
-    @state() value = 0;
-    @state() focused = 0;
-    @state() infos = '';
-
-    //math functions
-    private to1D = (row : number, col : number) => row * 9 + col;
-
-    getBlock(loc: number) {
-        //calc the row and col of blocks(3*3)
-        let r = Math.floor(Math.floor(loc / 9) / 3);
-        let c = Math.floor((loc % 9) / 3);
-
-        //calc the left-top number of block
-        let k = r * 27 + c * 3
-        return [k, k + 1, k + 2, k + 9, k + 10, k + 11, k + 18, k + 19, k + 20];
-    }
-
-    getRow(loc: number) {
-        let c = loc;
-        //find the first element of this row.
-        while (c % 9 != 0) { c--; }
-        return [c, c + 1, c + 2, c + 3, c + 4, c + 5, c + 6, c + 7, c + 8];
-    }
-
-    getCol(loc: number) {
-        let c = loc;
-        //find the first element of this column.
-        while (c / 9 >= 1) { c -= 9; }
-        return [c, c + 9, c + 18, c + 27, c + 36, c + 45, c + 54, c + 63, c + 72];
-    }
-
-    private hasNums(v: number) {
-        //allow to cancel the number
-        if (this.nums[this.focused] == v) return false;
-
-        //same number in block
-        let block = this.getBlock(this.focused)
-            .map(n => this.nums[n]);
-        for (let i of block) {
-            if (v == i) return true;
-        }
-
-        //same number in row
-        let row = this.getRow(this.focused)
-            .map(n => this.nums[n]);
-        for (let i of row) {
-            if (v == i) return true;
-        }
-
-        //same number in column
-        let col = this.getCol(this.focused)
-            .map(n => this.nums[n]);
-        for (let a of col) {
-            if (v == a) return true;
-        }
-
-        //no match
-        return false;
-    }
-
-    private toggleValue = (v: number) => {
-        this.nums[this.focused] = this.nums[this.focused] == v ? 0 : v
-        this.requestUpdate()
-    };
-
-    private focusOn = (row: number, col: number) => {
-        this.focused = this.to1D(row, col);
-    }
-
-
-
-    private checkWin() {
-        return this.nums.filter(v => v == 0).length == 0;
-    }
-
-    private sudoku() {
-        return html`
-            ${map(
-                    range(9), (row) => html`
-                        <div class="row">${map(
-                                range(9), (col) => html`
-                                    <button
-                                            class="${classMap({
-                                                chosen: (this.focused == this.to1D(row, col)),
-                                                leer: this.nums[this.to1D(row, col)] == 0,
-                                                sudoku: true
-                                            })}"
-                                            @click="${() => this.focusOn(row, col)}"
-                                    >
-                                        ${this.nums[this.to1D(row, col)]}
-                                    </button>
-                                `
-                        )}
-                        </div>
-                    `
-            )}`;
-    }
-
-    private numPaddle() {
-
-        return html`
-            ${map(
-                    range(3), (row) => html`
-                        <div class="row">${map(
-                                range(3), (col) => html`
-                                    <button
-                                            class="numPdl"
-                                            @click="${() => this.toggleValue(row * 3 + col + 1)}"
-                                            ?disabled="${this.hasNums(row * 3 + col + 1)}"
-                                    >
-                                        ${row * 3 + col + 1}
-                                    </button>
-                                `
-                        )}
-                        </div>
-                    `
-            )}`;
-    }
-
-    render() {
-        this.infos = this.checkWin() ? 'Win!' : '';
-
-        return html`<p class="title">Sudoku v1.0</p>
-            <div>${this.sudoku()}</div>
-            <p></p>
-            <div class="right">${this.numPaddle()}</div>
-            <div class="right">${this.numPaddle()}</div>
-            
-            <div>${this.infos}</div>
-        `;
-    }
 }
+
 
 declare global {
     interface HTMLElementTagNameMap {
