@@ -178,28 +178,28 @@ export class Sudoku extends LitElement {
     @property({type: Number}) option = 20;   //puzzle amount in Sudoku
     @state() leaderboard: Array<Score> = Array(5).fill({name: 'Empty', score: 0});
 
-    private isValidUsername = (username : string) => /^[a-zA-Z0-9_]{1,13}$/.test(username);
+    // private isValidUsername = (username : string) => /^[a-zA-Z0-9_]{1,13}$/.test(username);
 
-    private toggleLB = (username: string, score: number) => {
-       if (this.isValidUsername(username) || score > this.leaderboard[4].score) {
-           let flag = false;
-           const tmp = ({name: '', score: 0});
-           for (const s of this.leaderboard) {
-               if (flag) {
-                   [s.name, tmp.name] = [tmp.name, s.name];
-                   [s.score, tmp.score] = [tmp.score, s.score];
-               }
-
-               if (s.score < score && !flag) {
-                   tmp.name = s.name;
-                   tmp.score = s.score;
-                   s.name = username;
-                   s.score = score;
-                   flag = true;
-               }
-           }
-       }
-    }
+    // private toggleLB = (username: string, score: number) => {
+    //    if (this.isValidUsername(username) || score > this.leaderboard[4].score) {
+    //        let flag = false;
+    //        const tmp = ({name: '', score: 0});
+    //        for (const s of this.leaderboard) {
+    //            if (flag) {
+    //                [s.name, tmp.name] = [tmp.name, s.name];
+    //                [s.score, tmp.score] = [tmp.score, s.score];
+    //            }
+    //
+    //            if (s.score < score && !flag) {
+    //                tmp.name = s.name;
+    //                tmp.score = s.score;
+    //                s.name = username;
+    //                s.score = score;
+    //                flag = true;
+    //            }
+    //        }
+    //    }
+    // }
 
     /**
       * set number in focused blank and check win.
